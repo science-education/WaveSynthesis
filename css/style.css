@@ -525,47 +525,68 @@ canvas {
     display: flex;
     justify-content: center;
     align-items: center;
+    width: 44px;
+    height: 44px;
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.checkbox-container label {
+    display: block;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    cursor: pointer;
 }
 
 .checkbox-container input[type="checkbox"] {
     position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
     opacity: 0;
     cursor: pointer;
-    height: 0;
-    width: 0;
+    z-index: 2; /* Ensure input is on top to receive clicks reliably */
 }
 
 .checkmark {
-    position: relative;
-    height: 22px;
-    width: 22px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    height: 24px;
+    width: 24px;
     background-color: rgba(255, 255, 255, 0.05);
-    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: 6px;
-    cursor: pointer;
+    pointer-events: none; /* Let clicks pass through to the input */
     transition: all 0.2s;
 }
 
 .checkbox-container:hover input ~ .checkmark {
     border-color: var(--synth-color);
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 .checkbox-container input:checked ~ .checkmark {
     background-color: var(--synth-color);
     border-color: var(--synth-color);
-    box-shadow: 0 0 8px var(--synth-glow);
+    box-shadow: 0 0 10px var(--synth-glow);
 }
 
 .checkmark:after {
     content: "";
     position: absolute;
     display: none;
-    left: 7px;
+    left: 8px;
     top: 3px;
     width: 5px;
-    height: 10px;
+    height: 11px;
     border: solid white;
-    border-width: 0 2px 2px 0;
+    border-width: 0 3px 3px 0; /* Thick check mark border */
     transform: rotate(45deg);
 }
 

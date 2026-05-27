@@ -154,9 +154,11 @@ class WaveAudio {
         const sr = this.sampleRate;
         this.sourceBuffer.fill(0);
 
-        // Define a fundamental frequency for preset synthesis
-        // We want a clear tone, e.g., A3 (220 Hz) or middle C (261.63 Hz). Let's use A3 = 220Hz.
-        const f0 = 220.0;
+        // FFTの周期漏れ（スペクトルリーケージ）を完全に防ぐため、
+        // 2048サンプルのバッファの中にぴったり「整数周期」が収まる周波数を計算します。
+        // これにより、窓関数なしでも理論通りの極めて美しい倍音スペクトルが得られます。
+        const cycles = 10; // 2048サンプル中に10周期 (約215.3Hz, A3付近)
+        const f0 = (cycles * sr) / N;
         
         for (let i = 0; i < N; i++) {
             const t = i / sr;
@@ -192,7 +194,7 @@ class WaveAudio {
 
                 case 'violin':
                     // Violin-like tone: strong odd and even harmonics with specific dropoff
-                    // Rich spectrum, simulating string resonance
+                    // Snapped harmonics to integer bins for absolute clean representation
                     let v = 0;
                     const harmonics = [
                         { h: 1, a: 1.0 },   // Fundamental
@@ -200,35 +202,34 @@ class WaveAudio {
                         { h: 3, a: 0.6 },
                         { h: 4, a: 0.5 },
                         { h: 5, a: 0.3 },
-                        { h: 6, a: 0.4 },   // formant peak
+                        { h: 6, a: 0.4 },   // Formant peak
                         { h: 7, a: 0.1 },
                         { h: 8, a: 0.2 },
                         { h: 9, a: 0.15 },
                         { h: 10, a: 0.05 }
                     ];
                     for (const harm of harmonics) {
-                        v += harm.a * Math.sin(2 * Math.PI * f0 * harm.h * t + (harm.h * 0.2));
+                        v += harm.a * Math.sin(2 * Math.PI * (f0 * harm.h) * t + (harm.h * 0.2));
                     }
                     this.sourceBuffer[i] = v * 0.4;
                     break;
 
                 case 'voice_a':
                     // Simulated vowel "a" (Japanese "あ")
-                    // Typical male voice fundamental (e.g. 130 Hz) + Formants F1 (700Hz), F2 (1200Hz)
-                    const f0_voice = 130.0;
+                    // Snapped fundamental to exactly 6 cycles in 2048 samples (approx 129.2 Hz)
+                    const voiceCycles = 6;
+                    const f0_voice = (voiceCycles * sr) / N;
                     let voice = 0;
-                    // Add harmonics up to Nyquist, but shape with vocal tract filter envelopes (Formants)
-                    // Simple resonant filters simulation:
+                    
                     const f1 = 700;  // First formant
                     const f2 = 1200; // Second formant
                     const bw = 100;  // Formant bandwidth
                     
                     for (let h = 1; h < 35; h++) {
                         const freq = f0_voice * h;
-                        // Formant filter gain (resonance curves)
                         const g1 = 1 / (1 + Math.pow((freq - f1) / bw, 2));
                         const g2 = 0.5 / (1 + Math.pow((freq - f2) / bw, 2));
-                        const amp = (g1 + g2 + 0.05) / h; // 1/h natural decay + formant boost
+                        const amp = (g1 + g2 + 0.05) / h;
                         
                         voice += amp * Math.sin(2 * Math.PI * freq * t + Math.random() * 0.1);
                     }
