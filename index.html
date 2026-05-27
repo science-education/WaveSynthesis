@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WaveSynthesis - 波形近似シミュレーター</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="glow-bg"></div>
+    
+    <header>
+        <div class="logo">
+            <span class="logo-icon">~</span>
+            <h1>WaveSynthesis</h1>
+        </div>
+        <p class="subtitle">波形近似シミュレーター — 音と波の重ね合わせを学ぶ</p>
+    </header>
+
+    <main class="container">
+        <!-- 左側：コントロールパネル -->
+        <section class="panel glass-card" id="control-panel">
+            <h2><span class="icon">🎙️</span>音源の入力と選択</h2>
+            
+            <div class="control-group">
+                <h3>1. 入力を選択</h3>
+                <div class="input-selector">
+                    <button id="btn-record" class="btn btn-danger">
+                        <span class="record-dot"></span>マイクで録音
+                    </button>
+                    <div class="select-wrapper">
+                        <select id="preset-select">
+                            <option value="" disabled selected>またはプリセットを選択</option>
+                            <option value="sine">正弦波 (サイン波)</option>
+                            <option value="square">矩形波 (スクエア波)</option>
+                            <option value="sawtooth">鋸歯状波 (ソートゥース波)</option>
+                            <option value="triangle">三角波 (トライアングル波)</option>
+                            <option value="violin">バイオリン風の音 (豊かな倍音)</option>
+                            <option value="voice_a">母音「あ」の音 (音声シミュレート)</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="recording-status" class="status-text hidden">録音中... 残り時間: <span id="record-countdown">3</span>秒</div>
+            </div>
+
+            <div class="control-group">
+                <h3>2. 合成音の再生</h3>
+                <div class="play-controls">
+                    <button id="btn-play-synth" class="btn btn-primary" disabled>
+                        <span class="play-icon">▶</span>合成した音を聴く
+                    </button>
+                    <div class="volume-control">
+                        <label for="volume-slider">音量</label>
+                        <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.5">
+                    </div>
+                </div>
+            </div>
+
+            <div class="instruction-box">
+                <h4>💡 学習のヒント</h4>
+                <p>音や波は、様々な周波数を持つたくさんの「サイン波」が重なり合ってできています。</p>
+                <ul>
+                    <li><strong>低周波の波（一番上の成分など）</strong>：音の土台となる「基音」です。これを外すと、音の高さの芯が失われます。</li>
+                    <li><strong>高周波の波（下方の成分）</strong>：音にシャープさや彩りを与える「倍音」です。これを足すことで、丸い音がだんだんギザギザした音（矩形波や鋸歯状波など）に近づいていきます。</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- 中央：メイングラフ -->
+        <section class="main-display glass-card">
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="time-domain">時間領域（波形）</button>
+                <button class="tab-btn" data-tab="frequency-domain">周波数領域（スペクトル）</button>
+            </div>
+
+            <div class="tab-content" id="time-domain-tab">
+                <div class="canvas-container">
+                    <canvas id="canvas-main-waveform"></canvas>
+                    <div class="legend">
+                        <span class="legend-item original"><span class="color-box"></span>元の波形</span>
+                        <span class="legend-item synthesized"><span class="color-box"></span>合成波形（近似）</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content hidden" id="frequency-domain-tab">
+                <div class="canvas-container">
+                    <canvas id="canvas-spectrum"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- 右側・下側：分解された各周波数成分 -->
+        <section class="components-panel glass-card">
+            <div class="components-header">
+                <h2><span class="icon">🧩</span>分解された波の要素 (主要成分)</h2>
+                <div class="batch-actions">
+                    <button id="btn-select-all" class="btn-text">すべて選択</button>
+                    <button id="btn-clear-all" class="btn-text">すべて解除</button>
+                </div>
+            </div>
+            
+            <div id="components-list" class="components-list">
+                <div class="empty-components-message">
+                    音源を選択または録音すると、ここに分解された波の要素が表示されます。
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 WaveSynthesis Project. Built for Science Education.</p>
+    </footer>
+
+    <!-- スクリプトの読み込み -->
+    <script src="js/fft.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
