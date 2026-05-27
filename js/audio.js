@@ -168,32 +168,26 @@ class WaveAudio {
                     break;
                     
                 case 'square':
-                    // Square wave: infinite odd harmonics (1/n amplitude)
-                    // Synthesized mathematically to avoid aliasing issues in raw buffer
-                    let sq = 0;
-                    for (let h = 1; h < 25; h += 2) {
-                        sq += (1 / h) * Math.sin(2 * Math.PI * f0 * h * t);
-                    }
-                    this.sourceBuffer[i] = sq * 1.2; // Normalize slightly
+                    // Perfect mathematical square wave (+1.0 or -1.0)
+                    this.sourceBuffer[i] = Math.sin(2 * Math.PI * f0 * t) >= 0 ? 1.0 : -1.0;
                     break;
                     
                 case 'sawtooth':
-                    // Sawtooth wave: all harmonics (1/n amplitude, alternate signs or phases)
-                    let saw = 0;
-                    for (let h = 1; h < 25; h++) {
-                        saw += (1 / h) * Math.sin(2 * Math.PI * f0 * h * t) * (h % 2 === 0 ? -1 : 1);
+                    // Perfect mathematical sawtooth wave (-1.0 to 1.0)
+                    {
+                        const period = 1.0 / f0;
+                        const phase = (t % period) / period; // 0.0 to 1.0
+                        this.sourceBuffer[i] = 2.0 * phase - 1.0;
                     }
-                    this.sourceBuffer[i] = saw * 0.8;
                     break;
                     
                 case 'triangle':
-                    // Triangle wave: odd harmonics (1/n^2 amplitude, alternating phase)
-                    let tri = 0;
-                    for (let h = 1; h < 15; h += 2) {
-                        const sign = ((h - 1) / 2) % 2 === 0 ? 1 : -1;
-                        tri += (sign / (h * h)) * Math.sin(2 * Math.PI * f0 * h * t);
+                    // Perfect mathematical triangle wave (-1.0 to 1.0)
+                    {
+                        const period = 1.0 / f0;
+                        const phase = (t % period) / period; // 0.0 to 1.0
+                        this.sourceBuffer[i] = 2.0 * Math.abs(2.0 * phase - 1.0) - 1.0;
                     }
-                    this.sourceBuffer[i] = tri * 1.4;
                     break;
 
                 case 'violin':
