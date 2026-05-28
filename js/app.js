@@ -15,8 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnPlaySynth = document.getElementById('btn-play-synth');
     const volumeSlider = document.getElementById('volume-slider');
     const componentsList = document.getElementById('components-list');
-    const btnSelectAll = document.getElementById('btn-select-all');
-    const btnClearAll = document.getElementById('btn-clear-all');
+    const btnToggleAll = document.getElementById('btn-toggle-all');
 
     // Tab elements
     const tabBtns = document.querySelectorAll('.tab-btn');
@@ -32,6 +31,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeIndices = new Set();      // Which FFT bins are checked to add up
     let displayComponents = [];         // Top 12 frequency components shown in UI
     let activeSolo = null;              // Tracks currently playing solo tone timeout/handle
+
+    // すべて選択/解除ボタンのテキストを動的に更新する関数
+    function updateToggleAllButtonText() {
+        if (!btnToggleAll || displayComponents.length === 0) return;
+        if (activeIndices.size === displayComponents.length) {
+            btnToggleAll.textContent = 'すべて解除';
+        } else {
+            btnToggleAll.textContent = 'すべて選択';
+        }
+    }
 
     // Resizing and configuring canvas with Device Pixel Ratio for crystal clear curves
     function resizeCanvases() {
@@ -118,6 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Build list and draw UI
         renderComponentsList();
         drawGraphs();
+        updateToggleAllButtonText();
 
         // If currently playing, update running PeriodicWave coefficients immediately
         if (audio.isPlaying) {
@@ -376,27 +386,36 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 10);
         });
 
-        // Attach event listeners to checkboxes
-        const checkboxes = componentsList.querySelectorAll('input[type="checkbox"]');
-        checkboxes.forEach(cb => {
-            cb.addEventListener('change', (e) => {
-                const index = parseInt(e.target.dataset.index);
-                const row = e.target.closest('.component-item');
-                
-                if (e.target.checked) {
-                    activeIndices.add(index);
-                    if (row) row.classList.add('active-harmonic');
-                } else {
-                    activeIndices.delete(index);
-                    if (row) row.classList.remove('active-harmonic');
+        // 行全体をクリック・タップ可能にするイベントリスナー
+        const rows = componentsList.querySelectorAll('.component-item');
+        rows.forEach(item => {
+            item.addEventListener('click', (e) => {
+                // ソロ再生ボタン「聴く」またはその中の文字がクリックされた場合はトグルしない
+                if (e.target.closest('.btn-solo')) return;
+
+                const cb = item.querySelector('input[type="checkbox"]');
+                const index = parseInt(cb.dataset.index);
+
+                // クリックされたのが実際のチェックボックス（input）そのものでない場合のみ、プログラムで状態反転
+                if (e.target !== cb) {
+                    cb.checked = !cb.checked;
                 }
 
-                // Update Audio synthesis running coefficients
+                if (cb.checked) {
+                    activeIndices.add(index);
+                    item.classList.add('active-harmonic');
+                } else {
+                    activeIndices.delete(index);
+                    item.classList.remove('active-harmonic');
+                }
+
+                // 一括選択ボタンのテキスト更新
+                updateToggleAllButtonText();
+
+                // オーディオと描画の更新
                 if (audio.isPlaying) {
                     audio.updateActiveHarmonics(activeIndices);
                 }
-
-                // Redraw main wave displaying the combination
                 drawMainWaveform();
                 drawSpectrum();
             });
@@ -582,43 +601,42 @@ document.addEventListener('DOMContentLoaded', () => {
         audio.setVolume(parseFloat(e.target.value));
     });
 
-    // 5. Batch selection controls
-    btnSelectAll.addEventListener('click', () => {
-        if (displayComponents.length === 0) return;
-        
-        displayComponents.forEach(comp => {
-            activeIndices.add(comp.index);
-            const cb = componentsList.querySelector(`input[data-index="${comp.index}"]`);
-            if (cb) cb.checked = true;
-            const row = componentsList.querySelector(`.component-item[data-dataset-index="${comp.index}"]`) || 
-                        componentsList.querySelector(`.component-item[data-index="${comp.index}"]`);
-            if (row) row.classList.add('active-harmonic');
+    // 5. Batch selection controls (Toggle All)
+    if (btnToggleAll) {
+        btnToggleAll.addEventListener('click', () => {
+            if (displayComponents.length === 0) return;
+
+            const shouldSelectAll = (activeIndices.size < displayComponents.length);
+
+            if (shouldSelectAll) {
+                // すべて選択
+                displayComponents.forEach(comp => {
+                    activeIndices.add(comp.index);
+                    const cb = componentsList.querySelector(`input[data-index="${comp.index}"]`);
+                    if (cb) cb.checked = true;
+                    const row = componentsList.querySelector(`.component-item[data-index="${comp.index}"]`);
+                    if (row) row.classList.add('active-harmonic');
+                });
+            } else {
+                // すべて解除
+                activeIndices.clear();
+                displayComponents.forEach(comp => {
+                    const cb = componentsList.querySelector(`input[data-index="${comp.index}"]`);
+                    if (cb) cb.checked = false;
+                    const row = componentsList.querySelector(`.component-item[data-index="${comp.index}"]`);
+                    if (row) row.classList.remove('active-harmonic');
+                });
+            }
+
+            // 一括選択ボタンのテキスト更新
+            updateToggleAllButtonText();
+
+            if (audio.isPlaying) {
+                audio.updateActiveHarmonics(activeIndices);
+            }
+            
+            drawMainWaveform();
+            drawSpectrum();
         });
-
-        if (audio.isPlaying) {
-            audio.updateActiveHarmonics(activeIndices);
-        }
-        
-        drawMainWaveform();
-        drawSpectrum();
-    });
-
-    btnClearAll.addEventListener('click', () => {
-        if (displayComponents.length === 0) return;
-
-        activeIndices.clear();
-        displayComponents.forEach(comp => {
-            const cb = componentsList.querySelector(`input[data-index="${comp.index}"]`);
-            if (cb) cb.checked = false;
-            const row = componentsList.querySelector(`.component-item[data-index="${comp.index}"]`);
-            if (row) row.classList.remove('active-harmonic');
-        });
-
-        if (audio.isPlaying) {
-            audio.updateActiveHarmonics(activeIndices);
-        }
-
-        drawMainWaveform();
-        drawSpectrum();
-    });
+    }
 });
